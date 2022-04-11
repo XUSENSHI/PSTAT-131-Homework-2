@@ -1,0 +1,121 @@
+---
+title: "Homework2"
+author: "Thomas Shi"
+date: "2022/4/10"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(tidymodels)
+abalone <- read_csv(file = "abalone.csv")
+library(yardstick)
+```
+
+1
+
+```{r, echo = T}
+abalone <- read_csv(file = "abalone.csv")
+abalone <- mutate(.data = abalone, age = 1.5 * rings )
+abalone %>% head()
+```
+
+2
+
+```{r, echo = T}
+set.seed(3435)
+abalone_split <- initial_split(abalone, prop = 0.75,
+                                strata = age)
+abalone_train <- training(abalone_split)
+abalone_test <- testing(abalone_split)
+abalone_train %>% head()
+abalone_train %>% head()
+```
+
+3
+
+```{r, echo = T}
+abalone_train2 <- select(abalone_train, -rings)
+abalone_recipe <- 
+  recipe(age ~ ., data = abalone_train2) %>%
+  step_dummy(type)
+
+abalone_recipe <- abalone_recipe %>%
+  step_interact(terms = ~ shucked_weight : starts_with('type'))
+
+abalone_recipe <- abalone_recipe %>%
+  step_interact(terms = ~ longest_shell : diameter)
+
+
+abalone_recipe <- abalone_recipe %>%
+  step_interact(terms = ~ shucked_weight : shell_weight)
+
+
+
+abalone_recipe <- abalone_recipe %>% step_center(longest_shell, diameter, height, whole_weight,
+                               shucked_weight, viscera_weight, shell_weight)
+
+abalone_recipe <- abalone_recipe %>% step_scale(longest_shell, diameter, height, whole_weight,
+                               shucked_weight, viscera_weight, shell_weight)
+
+abalone_recipe
+
+
+
+```
+Since age = 1.5*rings, the relation between age and rings is fixed, so the model will be over optimized.
+With rings, the model seems to be better than it should be, but it is not.
+
+4
+
+```{r, echo = T}
+lm_model <- linear_reg() %>% 
+  set_engine("lm")
+```
+
+5
+
+```{r, echo = T}
+lm_wflow <- workflow() %>% 
+  add_model(lm_model) %>% 
+  add_recipe(abalone_recipe)
+```
+
+6
+```{r, echo = T}
+lm_fit <- fit(lm_wflow, abalone_train2)
+lm_fit %>% 
+  extract_fit_parsnip() %>% 
+  tidy()
+type <- c('F')
+longest_shell <- c(0.50)
+diameter <- c(0.10)
+height <- c(0.30)
+whole_weight <- c(4)
+shucked_weight <- c(1)
+viscera_weight <- c(2)
+shell_weight <- c(1)
+an_abalone <- data.frame(type, longest_shell,diameter,height,whole_weight,
+                         shucked_weight, viscera_weight, shell_weight)
+an_abalone
+predict(lm_fit, new_data = an_abalone)
+
+```
+
+7
+
+```{r, echo = T}
+abalone_metric <- metric_set(rsq, rmse, mae)
+abalone_train_res <- predict(lm_fit, new_data = abalone_train2 %>% select(-age))
+abalone_train_res <- bind_cols(abalone_train_res, abalone_train2 %>% select(age))
+abalone_train_res %>% head()
+abalone_metric(abalone_train_res, truth = age, 
+                estimate = .pred)
+
+```
+R square is 0.5575
+Root mean square error is 3.19879
+Mean absolute error is 2.3066
+R square being 0.5575 means that 55.75% of variability of Y can be explained by X
