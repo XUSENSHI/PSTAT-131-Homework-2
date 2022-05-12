@@ -121,6 +121,6 @@ abalone_metric(abalone_train_res, truth = age,
 
 ```
 R square is 0.5575
-Root mean square error is 3.19879
-Mean absolute error is 2.3066
+Root mean square error is 2.13
+Mean absolute error is 1.54
 R square being 0.5575 means that 55.75% of variability of Y can be explained by X
