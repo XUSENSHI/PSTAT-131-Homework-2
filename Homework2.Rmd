@@ -18,9 +18,14 @@ library(yardstick)
 
 ```{r, echo = T}
 abalone <- read_csv(file = "abalone.csv")
-abalone <- mutate(.data = abalone, age = 1.5 * rings )
+abalone <- mutate(.data = abalone, age = 1.5 + rings )
 abalone %>% head()
+abalone %>% ggplot(aes(x = age)) +
+  geom_histogram()
 ```
+The distribution of age is roughly normal. However, it is a little bit right skewed with a long tail. Most abalones are between 7 and 15 years old
+
+
 
 2
 
